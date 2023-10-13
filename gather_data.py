@@ -3,7 +3,7 @@ import csv
 import datetime
 
 
-THRESHOLD = 3
+THRESHOLD = 30
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
@@ -33,7 +33,7 @@ def append_completed_data(completed, data_path):
                              completed[vid]["completed_at"].strftime(TIME_FORMAT)])
 
 
-def track_buses(buses, started, data_path, log=False):
+def track_buses(buses, started, started_data_path, completed_data_path, log=False):
     updated_started = False
     updated_completed = False
     completed = {}
@@ -62,17 +62,17 @@ def track_buses(buses, started, data_path, log=False):
             print("\t- %s" % vid)
 
     # Write files
-    update_started_data(started) if updated_started else ""
-    append_completed_data(completed) if updated_completed else ""
+    update_started_data(started, started_data_path) if updated_started else ""
+    append_completed_data(completed, completed_data_path) if updated_completed else ""
 
 
 def gather_data():
     set_timezone()
     response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]), log=True)
-    data_path = get_data_path(os.environ["from_stpid"], os.environ["to_stpid"])
     buses = extract_bus_info(response)
-    started = read_started_data(data_path)
-    track_buses(buses, started, data_path, log=True)
+    started_data_path, completed_data_path = get_data_paths(os.environ["from_stpid"], os.environ["to_stpid"])
+    started = read_started_data(started_data_path)
+    track_buses(buses, started, started_data_path, completed_data_path, log=True)
 
 
 if __name__ == "__main__":

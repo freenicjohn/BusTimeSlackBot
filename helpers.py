@@ -57,9 +57,12 @@ def file_exists(path):
     return os.path.exists(path)
 
 
-def get_data_path(from_stpid, to_stpid):
-    data_path = "./data/from_%s_to_%s/%s" % (from_stpid, to_stpid, datetime.datetime.now().strftime("%Y_%m_%d"))
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
+def get_data_paths(from_stpid, to_stpid):
+    started_data_path = "./data/from_%s_to_%s" % (from_stpid, to_stpid)
+    completed_data_path = "%s/%s" % (started_data_path, datetime.datetime.now().strftime("%Y_%m_%d"))
+    if not os.path.exists(started_data_path):
+        os.makedirs(started_data_path)
+    if not os.path.exists(completed_data_path):
+        os.makedirs(completed_data_path)
 
-    return data_path
+    return started_data_path, completed_data_path
