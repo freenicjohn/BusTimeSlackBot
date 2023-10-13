@@ -7,32 +7,33 @@ THRESHOLD = 3
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-def read_started_data():
+def read_started_data(data_path):
     started = {}
-    with open("./data/started.csv", mode="r") as file:
-        reader = csv.reader(file)
-        for vid, start_time in reader:
-            started[vid] = datetime.datetime.strptime(start_time, TIME_FORMAT)
+    if file_exists("%s/started.csv" % data_path):
+        with open("%s/started.csv" % data_path, mode="r") as file:
+            reader = csv.reader(file)
+            for vid, start_time in reader:
+                started[vid] = datetime.datetime.strptime(start_time, TIME_FORMAT)
 
     return started
 
 
-def update_started_data(started):
-    with open("./data/started.csv", mode="w") as file:
+def update_started_data(started, data_path):
+    with open("%s/started.csv" % data_path, mode="w") as file:
         writer = csv.writer(file)
         for vid in started:
             writer.writerow([vid, started[vid].strftime(TIME_FORMAT)])
 
 
-def append_completed_data(completed):
-    with open("./data/completed.csv", mode="a") as file:
+def append_completed_data(completed, data_path):
+    with open("%s/completed.csv" % data_path, mode="a") as file:
         writer = csv.writer(file)
         for vid in completed:
             writer.writerow([vid, completed[vid]["left_at"].strftime(TIME_FORMAT),
                              completed[vid]["completed_at"].strftime(TIME_FORMAT)])
 
 
-def track_buses(buses, started, log=False):
+def track_buses(buses, started, data_path, log=False):
     updated_started = False
     updated_completed = False
     completed = {}
@@ -69,9 +70,10 @@ def track_buses(buses, started, log=False):
 def gather_data():
     set_timezone()
     response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]), log=True)
+    data_path = get_data_path(os.environ["from_stpid"], os.environ["to_stpid"])
     buses = extract_bus_info(response)
-    started = read_started_data()
-    track_buses(buses, started, log=True)
+    started = read_started_data(data_path)
+    track_buses(buses, started, data_path, log=True)
 
 
 if __name__ == "__main__":

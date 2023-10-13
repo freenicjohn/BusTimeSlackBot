@@ -51,3 +51,15 @@ def set_timezone():
 
 def now_plus(minutes):
     return datetime.datetime.now() + datetime.timedelta(minutes=minutes)
+
+
+def file_exists(path):
+    return os.path.exists(path)
+
+
+def get_data_path(from_stpid, to_stpid):
+    data_path = "./data/from_%s_to_%s/%s" % (from_stpid, to_stpid, datetime.datetime.now().strftime("%Y_%m_%d"))
+    if not os.path.exists(data_path):
+        os.makedirs(data_path)
+
+    return data_path
