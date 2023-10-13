@@ -3,7 +3,7 @@ import csv
 import datetime
 
 
-THRESHOLD = 30
+THRESHOLD = 3
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
