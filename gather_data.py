@@ -53,6 +53,7 @@ def track_buses(buses, started, data_path, log=False):
             if bus.vid in started and bus.minutes < THRESHOLD:
                 completed[bus.vid] = {"left_at": started.pop(bus.vid), "completed_at": now_plus(bus.minutes)}
                 updated_completed = True
+                updated_started = True
                 print("\t\t* Added to completed.csv since %s < %s" % (bus.minutes, THRESHOLD)) if log else ""
 
     if log:
@@ -61,10 +62,8 @@ def track_buses(buses, started, data_path, log=False):
             print("\t- %s" % vid)
 
     # Write files
-    if updated_started or updated_completed:
-        update_started_data(started)
-    if updated_completed:
-        append_completed_data(completed)
+    update_started_data(started) if updated_started else ""
+    append_completed_data(completed) if updated_completed else ""
 
 
 def gather_data():
