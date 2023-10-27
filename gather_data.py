@@ -22,7 +22,9 @@ def read_started_data(in_lambda=False):
         started = {}
 
         obj = s3.get_object(Bucket='bus-time-lambda-bucket', Key='started.csv')
-        test = obj['Body'].read().decode('utf-8').split(',')
+        lines = [line.split(',') for line in obj['Body'].read().decode('utf-8').strip().split('\r\n')]
+        for vid, start_time in lines:
+            started[vid] = {"left_at": datetime.datetime.strptime(start_time, TIME_FORMAT)}
     else:
         if file_exists(STARTED_PATH):
             with open(STARTED_PATH, mode="r") as file:
