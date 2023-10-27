@@ -1,33 +1,38 @@
 from helpers import *
 import csv
 import datetime
-
+import boto3
 
 THRESHOLD = 3
 TIME_FORMAT = "%Y-%m-%d %H:%M"
+STARTED_PATH = "./started.csv"
 
 
 def save_to_file(data, path, overwrite):
-    dir_path = "/".join(path.split("/")[:-1])
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
     with open(path, mode="w" if overwrite else "a+") as file:
         writer = csv.writer(file)
         for key in data:
             writer.writerow([key, *[data[key][key2].strftime(TIME_FORMAT) for key2 in data[key]]])
 
 
-def read_started_data(data_path):
+def read_started_data(in_lambda=False):
     started = {}
-    if file_exists(data_path):
-        with open(data_path, mode="r") as file:
-            reader = csv.reader(file)
-            for vid, start_time in reader:
-                started[vid] = {"left_at": datetime.datetime.strptime(start_time, TIME_FORMAT)}
+    if in_lambda:
+        s3 = boto3.client('s3')
+        started = {}
+
+        obj = s3.get_object(Bucket='bus-time-lambda-bucket', Key='started.csv')
+        test = obj['Body'].read().decode('utf-8').split(',')
+    else:
+        if file_exists(STARTED_PATH):
+            with open(STARTED_PATH, mode="r") as file:
+                reader = csv.reader(file)
+                for vid, start_time in reader:
+                    started[vid] = {"left_at": datetime.datetime.strptime(start_time, TIME_FORMAT)}
     return started
 
 
-def track_buses(buses, started, started_data_path, completed_data_path, log=False):
+def track_buses(buses, started, completed_data_path, in_lambda=False, log=False):
     updated_started = False
     updated_completed = False
     completed = {}
@@ -56,17 +61,21 @@ def track_buses(buses, started, started_data_path, completed_data_path, log=Fals
             print("\t- %s" % vid)
 
     # Write files
-    save_to_file(started, started_data_path, overwrite=True) if updated_started else ""
-    save_to_file(completed, completed_data_path, overwrite=False) if updated_completed else ""
+    save_to_file(started, STARTED_PATH, overwrite=True) if updated_started and not in_lambda else ""
+    save_to_file(completed, completed_data_path, overwrite=False) if updated_completed and not in_lambda else ""
 
 
-def gather_data():
+def gather_data(in_lambda=False):
     set_timezone()
     response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]), log=True)
     buses = extract_bus_info(response)
-    started_data_path, completed_data_path = get_data_paths(os.environ["from_stpid"], os.environ["to_stpid"])
-    started = read_started_data(started_data_path)
-    track_buses(buses, started, started_data_path, completed_data_path, log=True)
+    completed_data_path = get_data_paths(os.environ["from_stpid"], os.environ["to_stpid"])
+    started = read_started_data(in_lambda)
+    track_buses(buses, started, completed_data_path, in_lambda, log=True)
+
+
+def lambda_handler(event, context):
+    gather_data(in_lambda=True)
 
 
 if __name__ == "__main__":

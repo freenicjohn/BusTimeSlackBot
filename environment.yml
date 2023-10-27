@@ -2,3 +2,5 @@ name: BusTimeSlackBot
 channels:
   - defaults
 prefix: /Users/njohn/anaconda3/envs/BusTimeSlackBot
+dependencies:
+  - urllib3<2
