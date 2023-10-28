@@ -57,7 +57,7 @@ def file_exists(path):
     return os.path.exists(path)
 
 
-def get_data_paths(from_stpid, to_stpid):
-    completed_data_path = "%s_%s_%s_completed.csv" % (from_stpid, to_stpid, datetime.datetime.now().strftime("%Y_%m_%d"))
+def get_data_path(from_stpid, to_stpid):
+    path = "%s_%s_%s.csv" % (from_stpid, to_stpid, datetime.datetime.now().strftime("%Y_%m_%d"))
 
-    return completed_data_path
+    return path
