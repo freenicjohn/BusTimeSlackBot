@@ -1,5 +1,4 @@
 .idea
 *.zip
 __pycache__/
-*data
 *.csv
