@@ -12,10 +12,10 @@ def save_locally(started, completed, path):
     with open(path, mode="w") as file:
         writer = csv.writer(file)
         for bus_id in completed:
-            writer.writerow([bus_id, completed[bus_id]["left_at"].strftime(TIME_FORMAT),
-                             completed[bus_id]["completed_at"].strftime(TIME_FORMAT)])
+            writer.writerow([bus_id, completed[bus_id]["start"].strftime(TIME_FORMAT),
+                             completed[bus_id]["end"].strftime(TIME_FORMAT)])
         for bus_id in started:
-            writer.writerow([bus_id, started[bus_id]["left_at"].strftime(TIME_FORMAT)])
+            writer.writerow([bus_id, started[bus_id]["start"].strftime(TIME_FORMAT)])
 
 
 def save_s3(started, completed, data_path):
@@ -23,10 +23,10 @@ def save_s3(started, completed, data_path):
     data = ""
 
     for bus_id in completed:
-        data += "%s,%s,%s\n" % (bus_id, completed[bus_id]["left_at"].strftime(TIME_FORMAT),
-                                completed[bus_id]["completed_at"].strftime(TIME_FORMAT))
+        data += "%s,%s,%s\n" % (bus_id, completed[bus_id]["start"].strftime(TIME_FORMAT),
+                                completed[bus_id]["end"].strftime(TIME_FORMAT))
     for bus_id in started:
-        data += "%s,%s\n" % (bus_id, started[bus_id]["left_at"].strftime(TIME_FORMAT))
+        data += "%s,%s\n" % (bus_id, started[bus_id]["start"].strftime(TIME_FORMAT))
 
     s3_client.put_object(Body=data, Bucket='bus-time-lambda-bucket', Key=data_path.split("/")[-1])
 
@@ -56,10 +56,10 @@ def parse_data(lines):
 
     for vals in lines:
         if len(vals) == 2:
-            started[vals[0]] = {"left_at": datetime.datetime.strptime(vals[1], TIME_FORMAT)}
+            started[vals[0]] = {"start": datetime.datetime.strptime(vals[1], TIME_FORMAT)}
         if len(vals) == 3:
-            completed[vals[0]] = {"left_at": datetime.datetime.strptime(vals[1], TIME_FORMAT),
-                                  "completed_at": datetime.datetime.strptime(vals[2], TIME_FORMAT)}
+            completed[vals[0]] = {"start": datetime.datetime.strptime(vals[1], TIME_FORMAT),
+                                  "end": datetime.datetime.strptime(vals[2], TIME_FORMAT)}
 
     return started, completed
 
@@ -67,27 +67,21 @@ def parse_data(lines):
 def track_buses(buses, started, completed, data_path, in_lambda=False, log=False):
     updated_data = False
 
-    print("Upcoming:") if log else ""
     for bus in buses:
         # Check departures
         if bus.departing:
-            print("\t- Departure: %s in %s min" % (bus.vid, bus.minutes)) if log else ""
             if bus.vid not in started and bus.minutes < THRESHOLD:
-                started[bus.vid] = {"left_at": (datetime.datetime.now() + datetime.timedelta(minutes=bus.minutes))}
+                started[bus.vid] = {"start": (datetime.datetime.now() + datetime.timedelta(minutes=bus.minutes))}
                 updated_data = True
-                print("\t\t* Trip beginning since %s < %s" % (bus.minutes, THRESHOLD)) if log else ""
         # Check arrivals
         if bus.arriving:
-            print("\t- Arrival: %s in %s min" % (bus.vid, bus.minutes)) if log else ""
             if bus.vid in started and bus.minutes < THRESHOLD:
-                completed[bus.vid] = {"left_at": started.pop(bus.vid)["left_at"], "completed_at": now_plus(bus.minutes)}
+                completed[bus.vid] = {"start": started.pop(bus.vid)["start"], "end": now_plus(bus.minutes)}
                 updated_data = True
-                print("\t\t* Trip completed since %s < %s" % (bus.minutes, THRESHOLD)) if log else ""
 
     if log:
-        print("\nIn Progress:")
-        for vid in started:
-            print("\t- %s" % vid)
+        print("\n".join(["%s | start: %s" % (vid, started[vid]["start"]) for vid in started]))
+        print("\n".join(["%s | start: %s | end: %s" % (vid, completed[vid]["start"], completed[vid]["end"]) for vid in completed]))
 
     if updated_data:
         if in_lambda:
@@ -98,7 +92,7 @@ def track_buses(buses, started, completed, data_path, in_lambda=False, log=False
 
 def gather_data(in_lambda=False):
     set_timezone()
-    response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]), log=True)
+    response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]))
     buses = extract_bus_info(response)
     path = get_data_path(os.environ["from_stpid"], os.environ["to_stpid"])
     started, completed = read_data(path, in_lambda)
