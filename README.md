@@ -5,10 +5,6 @@ Functions relating to the CTA's buses
   - Designed to be run as an AWS Lambda.
 - gather_data.py
   - Tracks travel time for every bus between a start and end stop and stores the data in a csv file in order to predict travel time on different days/times
-  - Designed to run every minute on a Raspberry Pi 4 with the following cronjob:
-    ```
-      * * * * * cd /home/username/Projects/BusTimeSlackBot && /home/username/miniforge3/bin/python /home/username/Projects/BusTimeSlackBot/gather_data.py > /home/username/cronlogs/clean_tmp_dir.log
-      ```
 ## Deploy Lambda
 1) Zip all py files with
 ```
