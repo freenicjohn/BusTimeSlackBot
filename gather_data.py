@@ -38,9 +38,12 @@ def read_data(path, in_lambda=False):
 
     if in_lambda:
         s3_client = boto3.client('s3')
-        obj = s3_client.get_object(Bucket='bus-time-lambda-bucket', Key=path.split("/")[-1])
-        lines = [line.split(',') for line in obj['Body'].read().decode('utf-8').split('\n')]
-        started, completed = parse_data(lines)
+        try:
+            obj = s3_client.get_object(Bucket='bus-time-lambda-bucket', Key=path.split("/")[-1])
+            lines = [line.split(',') for line in obj['Body'].read().decode('utf-8').split('\n')]
+            started, completed = parse_data(lines)
+        except Exception as e:
+            print(e)
     else:
         if file_exists(path):
             with open(path, mode="r") as file:
