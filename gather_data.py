@@ -107,6 +107,7 @@ def gather_data(in_lambda=False):
 
 def lambda_handler(event, context):
     gather_data(in_lambda=True)
+    print("test")
 
 
 if __name__ == "__main__":
