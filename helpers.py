@@ -26,13 +26,11 @@ def get_routes():
     return routes
 
 
-def load_secrets():
+def load_secrets(secret_names):
     # Load secrets (that would otherwise be set in the aws configuration)
     f = open("../BusTimeSlackBot_overlays/secrets.json")
     secrets = json.load(f)
     f.close()
-    secret_names = ["slack_webhook", "from_name", "from_stpids", "rts", "cta_api_key", "to_stpids", "notify_rt",
-                    "notify_stop_name", "notify_stpid"]
     for name in secret_names:
         os.environ[name] = secrets[name]
 
