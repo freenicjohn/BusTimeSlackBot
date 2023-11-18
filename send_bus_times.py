@@ -3,9 +3,9 @@ from helpers import *
 
 def build_message():
     set_timezone()
-    bus_data = call_cta_api(os.environ["from_stpid"])
-    buses = extract_bus_info(bus_data)
-    msg = "Upcoming %s buses @ %s:\n" % (os.environ["rt"],  os.environ["from_name"]) if len(buses) > 0 else \
+    bus_data = call_cta_api(os.environ["notify_stpid"])
+    buses = extract_bus_data(bus_data)
+    msg = "Upcoming %s buses @ %s:\n" % (os.environ["notify_rt"],  os.environ["notify_stop_name"]) if len(buses) > 0 else \
         "No upcoming buses\n"
     for bus in buses:
         msg += "\t- %s (%s)\n" % (bus.departure_time, "DUE" if bus.due else "%s min" % bus.minutes)
