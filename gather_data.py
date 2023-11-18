@@ -84,6 +84,7 @@ def track_buses(buses, started, completed, from_stpid, to_stpid, in_lambda=False
                 updated_data = True
 
     if log:
+        print("From: %s To: %s" % (from_stpid, to_stpid))
         print("\n".join(["%s | start: %s" % (vid, started[vid]["start"]) for vid in started]))
         print("\n".join(["%s | start: %s | end: %s" % (vid, completed[vid]["start"], completed[vid]["end"]) for vid in completed]))
 
