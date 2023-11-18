@@ -13,8 +13,8 @@ class Bus:
         self.departure_time = datetime.datetime.strptime(data["prdtm"], '%Y%m%d %H:%M').strftime('%I:%M %p')
         self.vid = data["vid"]
         self.stpid = data["stpid"]
-        self.departing = self.stpid == os.environ["from_stpid"]
-        self.arriving = self.stpid == os.environ["to_stpid"]
+        self.departing = self.stpid in os.environ["from_stpids"].split(",")
+        self.arriving = self.stpid in os.environ["to_stpids"].split(",")
 
 
 def load_secrets():
@@ -22,7 +22,7 @@ def load_secrets():
     f = open("../BusTimeSlackBot_overlays/secrets.json")
     secrets = json.load(f)
     f.close()
-    secret_names = ["slack_webhook", "from_name", "from_stpid", "rt", "cta_api_key", "to_stpid"]
+    secret_names = ["slack_webhook", "from_name", "from_stpids", "rt", "cta_api_key", "to_stpids"]
     for name in secret_names:
         os.environ[name] = secrets[name]
 
@@ -35,12 +35,13 @@ def call_cta_api(stpid_string="", vid="", log=False):
     return requests.get(cta_url).json()
 
 
-def extract_bus_info(data):
+def extract_bus_info(data, from_stpid, to_stpid):
     buses = []
     if "prd" in data["bustime-response"]:
         data = data["bustime-response"]['prd']
         for bus_data in data:
-            buses.append(Bus(bus_data))
+            if bus_data["stpid"] in [from_stpid, to_stpid]:
+                buses.append(Bus(bus_data))
     return buses
 
 

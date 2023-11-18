@@ -31,10 +31,11 @@ def save_s3(started, completed, data_path):
     s3_client.put_object(Body=data, Bucket='bus-time-lambda-bucket', Key=data_path.split("/")[-1])
 
 
-def read_data(path, in_lambda=False):
+def read_data(from_stpid, to_stpid, in_lambda=False):
     global s3_client
     started = {}
     completed = {}
+    path = get_data_path(from_stpid, to_stpid)
 
     if in_lambda:
         s3_client = boto3.client('s3')
@@ -67,7 +68,7 @@ def parse_data(lines):
     return started, completed
 
 
-def track_buses(buses, started, completed, data_path, in_lambda=False, log=False):
+def track_buses(buses, started, completed, from_stpid, to_stpid, in_lambda=False, log=False):
     updated_data = False
 
     for bus in buses:
@@ -87,6 +88,7 @@ def track_buses(buses, started, completed, data_path, in_lambda=False, log=False
         print("\n".join(["%s | start: %s | end: %s" % (vid, completed[vid]["start"], completed[vid]["end"]) for vid in completed]))
 
     if updated_data:
+        data_path = get_data_path(from_stpid, to_stpid)
         if in_lambda:
             save_s3(started, completed, data_path)
         else:
@@ -95,11 +97,11 @@ def track_buses(buses, started, completed, data_path, in_lambda=False, log=False
 
 def gather_data(in_lambda=False):
     set_timezone()
-    response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpid"], os.environ["to_stpid"]))
-    buses = extract_bus_info(response)
-    path = get_data_path(os.environ["from_stpid"], os.environ["to_stpid"])
-    started, completed = read_data(path, in_lambda)
-    track_buses(buses, started, completed, path, in_lambda, log=True)
+    response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpids"], os.environ["to_stpids"]), log=not in_lambda)
+    for from_stpid, to_stpid in zip(os.environ["from_stpids"].split(","), os.environ["to_stpids"].split(",")):
+        buses = extract_bus_info(response, from_stpid, to_stpid)
+        started, completed = read_data(from_stpid, to_stpid, in_lambda)
+        track_buses(buses, started, completed, from_stpid, to_stpid, in_lambda, log=True)
 
 
 def lambda_handler(event, context):
