@@ -3,7 +3,7 @@ import boto3
 import csv
 from helpers import now_plus, file_exists
 
-THRESHOLD = 30
+THRESHOLD = 3
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
