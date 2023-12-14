@@ -3,21 +3,21 @@ import boto3
 import csv
 from helpers import now_plus, file_exists
 
-THRESHOLD = 3
+THRESHOLD = 30
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
 class TrackBuses:
-    def __init__(self, bus_data, routes, in_lambda=False, log=False):
+    def __init__(self, cta_data, in_lambda=False, log=False):
         self.in_lambda = in_lambda
         self.s3_client = None
         self.buses = {}
         self.log = log
-        self.routes = routes
+        self.routes = cta_data.routes
         self.data_path = "%s.csv" % datetime.now().strftime("%Y_%m_%d")
 
         self.read_data()
-        self.update_data(bus_data)
+        self.update_data(cta_data)
 
     def save_locally(self):
         with open(self.data_path, mode="w") as file:
@@ -42,24 +42,25 @@ class TrackBuses:
         self.s3_client.put_object(Body=data, Bucket='bus-time-lambda-bucket', Key=self.data_path)
 
     def print_status(self):
-        for from_id in self.routes:
-            print("\nFrom: %s To: %s" % (from_id, self.routes[from_id]))
-            for bus in [bus for bus in self.buses.values() if bus.from_id == from_id]:
-                bus.print_status()
+        #for route in self.routes:
+            #print("\nFrom: %s To: %s" % (route["from"], route["to"]))
+        for bus in self.buses.values():
+            bus.print_status()
 
-    def update_data(self, buses):
+    def update_data(self, cta_data):
         updated_data = False
-
+        buses = cta_data.get_buses()
         for bus in buses:
             if bus.minutes < THRESHOLD:
                 if bus.departing:
                     if bus.vid not in self.buses:
-                        self.buses[bus.vid] = self.TrackedBus(bus.stpid, self.routes[bus.stpid], bus.rt, bus.vid,
+                        self.buses[bus.vid] = self.TrackedBus(bus.stpid, -1, bus.rt, bus.vid,
                                                               (datetime.now() + timedelta(minutes=bus.minutes)))
                         updated_data = True
                 if bus.arriving:
-                    if bus.vid in self.buses and not self.buses[bus.vid].completed:
+                    if bus.vid in self.buses and not self.buses[bus.vid].completed():
                         self.buses[bus.vid].end = now_plus(bus.minutes)
+                        self.buses[bus.vid].to_id = bus.stpid
                         updated_data = True
 
         if self.log:
@@ -111,7 +112,7 @@ class TrackBuses:
 
         def print_status(self):
             if self.completed():
-                print("%s | %s | start: %s | end: %s" % (self.vid, self.rt, self.start.strftime(TIME_FORMAT),
+                print("From: %s | To: %s | VID: %s | Route: #%s | Start: %s | End: %s" % (self.from_id, self.to_id, self.vid, self.rt, self.start.strftime(TIME_FORMAT),
                                                          self.end.strftime(TIME_FORMAT)))
             else:
-                print("%s | %s | start: %s" % (self.vid, self.rt, self.start.strftime(TIME_FORMAT)))
+                print("From: %s | VID: %s | Route: #%s | Start: %s" % (self.from_id, self.vid, self.rt, self.start.strftime(TIME_FORMAT)))

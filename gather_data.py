@@ -1,13 +1,16 @@
 from helpers import *
 from TrackBuses import TrackBuses
+from CtaData import CtaData
 
 
 def gather_data(in_lambda=False):
     set_timezone()
-    api_response = call_cta_api(stpid_string="%s,%s" % (os.environ["from_stpids"], os.environ["to_stpids"]), log=not in_lambda)
-    bus_data = extract_bus_data(api_response)
-    routes = get_routes()
-    TrackBuses(bus_data, routes, in_lambda, log=True)
+    cta_data = CtaData(os.environ["cta_bus_api_key"],
+                       os.environ["rt_from"].split(","),
+                       os.environ["rt_to"].split(","),
+                       os.environ["rt_num"].split(","),
+                       True)
+    TrackBuses(cta_data, in_lambda, log=True)
 
 
 def lambda_handler(event, context):
@@ -15,7 +18,6 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    secret_names = ["slack_webhook", "from_name", "from_stpids", "rts", "cta_api_key", "to_stpids", "notify_rt",
-                    "notify_stop_name", "notify_stpid"]
+    secret_names = ["slack_webhook", "from_name", "rt_from", "rt_to", "rt_num", "cta_bus_api_key"]
     load_secrets(secret_names)
     gather_data()
