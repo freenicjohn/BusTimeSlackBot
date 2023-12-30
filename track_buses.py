@@ -7,7 +7,7 @@ from CTA import CTA
 
 def load_secrets(secret_names):
     # Load secrets (that would otherwise be set in the aws configuration)
-    f = open("../BusTimeSlackBot_overlays/secrets.json")
+    f = open("../overlays/secrets.json")
     secrets = json.load(f)
     f.close()
     for name in secret_names:
