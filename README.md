@@ -1,5 +1,5 @@
 # BusTracker
-Tracks a configurable number of buses arrival and departure times
+Tracks a configurable number of buses arrival and departure times using the [CTA Bus API](https://www.transitchicago.com/assets/1/6/cta_Bus_Tracker_API_Developer_Guide_and_Documentation_20160929.pdf)
 - track_buses.py
   - Tracks travel time for every bus between a start and end stop and stores the data in a csv file in order to predict travel time on different days/times
 ## Deploy Lambda
