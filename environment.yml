@@ -1,6 +1,6 @@
-name: BusTimeSlackBot
+name: BusTracker
 channels:
   - defaults
-prefix: /Users/njohn/anaconda3/envs/BusTimeSlackBot
+prefix: /Users/njohn/anaconda3/envs/BusTracker
 dependencies:
   - urllib3<2
