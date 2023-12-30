@@ -29,6 +29,8 @@ class CTA:
             for bus in data:
                 if bus['prdctdn'] == "DUE":
                     bus['prdctdn'] = 0
+                elif bus['prdctdn'] == "DLY":
+                    bus['prdctdn'] = 30
                 else:
                     bus['prdctdn'] = int(bus['prdctdn'])
         return data
