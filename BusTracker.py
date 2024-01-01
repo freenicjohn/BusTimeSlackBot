@@ -2,7 +2,7 @@ import boto3
 import csv
 import os
 
-THRESHOLD = 5
+THRESHOLD = 3
 
 
 class BusTracker:
