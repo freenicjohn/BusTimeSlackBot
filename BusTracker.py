@@ -67,7 +67,7 @@ class BusTracker:
                 tmp = "VID: %s | Trip ID: %s | From: %s | Start: %s" % (vid, self.buses[vid]["trip_id"],
                                                                         self.buses[vid]["from"],
                                                                         self.buses[vid]["start"])
-                if len(self.buses[vid]) == 4:
+                if len(self.buses[vid]) == 5:
                     tmp += " | To: %s | End: %s" % (self.buses[vid]["to"], self.buses[vid]["end"])
                 print(tmp)
 
