@@ -34,41 +34,40 @@ class BusTracker:
             except Exception as e:
                 print(e)
         else:
-            if file_exists(self.data_path):
+            if os.path.exists(self.data_path):
                 with open(self.data_path, mode="r") as file:
                     reader = csv.reader(file)
                     self.parse_csv_data(reader)
 
     def parse_csv_data(self, lines):
         for vid, *data in lines:
-            # Each line is vid,trip_id,from_id,start(,to_id, end)
-            if len(data) == 3:
-                self.buses[vid] = {'trip_id': data[0], 'from': data[1], 'start': data[2]}
-            if len(data) == 5:
-                self.buses[vid] = {'trip_id': data[0], 'from': data[1], 'start': data[2], 'to': data[3], 'end': data[4]}
+            # Each line is vid-trip_id,from_id,start(,to_id, end)
+            if len(data) == 2:
+                self.buses[vid] = {'from': data[0], 'start': data[1]}
+            else:
+                self.buses[vid] = {'from': data[0], 'start': data[1], 'to': data[2], 'end': data[3]}
 
     def update_bus_info(self):
         for bus in self.cta_data:
             if bus['prdctdn'] < THRESHOLD:
-                vid = bus['vid']
+                uid = "%s-%s" % (bus['vid'], bus['tatripid'])
                 stpid = bus['stpid']
                 prdtm = bus['prdtm']
-                trip_id = bus['tatripid']
-                if stpid in self.rt_from and vid not in self.buses:  # Bus is departing
-                    self.buses[vid] = {'trip_id': trip_id, 'from': stpid, 'start': prdtm}
+                if stpid in self.rt_from and uid not in self.buses:  # Bus is departing
+                    self.buses[uid] = {'from': stpid, 'start': prdtm}
                     self.updated_data = True
-                elif stpid in self.rt_to and vid in self.buses and trip_id == self.buses[vid]['trip_id']:  # Bus is arriving
-                    self.buses[vid]['to'] = stpid
-                    self.buses[vid]['end'] = prdtm
+                elif stpid in self.rt_to and uid in self.buses:  # Bus is arriving
+                    self.buses[uid]['to'] = stpid
+                    self.buses[uid]['end'] = prdtm
                     self.updated_data = True
 
         if self.log:
-            for vid in self.buses:
-                tmp = "VID: %s | Trip ID: %s | From: %s | Start: %s" % (vid, self.buses[vid]["trip_id"],
-                                                                        self.buses[vid]["from"],
-                                                                        self.buses[vid]["start"])
-                if len(self.buses[vid]) == 5:
-                    tmp += " | To: %s | End: %s" % (self.buses[vid]["to"], self.buses[vid]["end"])
+            for uid in self.buses:
+                tmp = "VID-Trip ID: %s | From: %s | Start: %s" % (uid,
+                                                                  self.buses[uid]["from"],
+                                                                  self.buses[uid]["start"])
+                if len(self.buses[uid]) != 2:
+                    tmp += " | To: %s | End: %s" % (self.buses[uid]["to"], self.buses[uid]["end"])
                 print(tmp)
 
     def write_csv_data(self):
@@ -84,15 +83,11 @@ class BusTracker:
                     for vid in self.buses:
                         writer.writerow(self.formatted_csv_line(vid))
 
-    def formatted_csv_line(self, vid):
-        if len(self.buses[vid]) == 3:
-            tmp = [vid, self.buses[vid]['trip_id'], self.buses[vid]['from'], self.buses[vid]['start']]
+    def formatted_csv_line(self, uid):
+        if len(self.buses[uid]) == 2:
+            tmp = [uid, self.buses[uid]['from'], self.buses[uid]['start']]
         else:
-            tmp = [vid, self.buses[vid]['trip_id'], self.buses[vid]['from'], self.buses[vid]['start'],
-                   self.buses[vid]['to'], self.buses[vid]['end']]
+            tmp = [uid, self.buses[uid]['from'], self.buses[uid]['start'], self.buses[uid]['to'],
+                   self.buses[uid]['end']]
 
         return ",".join(tmp) + "\n" if self.in_lambda else tmp
-
-
-def file_exists(path):
-    return os.path.exists(path)
