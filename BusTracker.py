@@ -2,7 +2,7 @@ import boto3
 import csv
 import os
 
-THRESHOLD = 3
+THRESHOLD = 5
 
 
 class BusTracker:
@@ -41,11 +41,11 @@ class BusTracker:
 
     def parse_csv_data(self, lines):
         for vid, *data in lines:
-            # Each line is vid,from_id,start(,to_id, end)
-            if len(data) == 2:
-                self.buses[vid] = {'from': data[0], 'start': data[1]}
-            if len(data) == 4:
-                self.buses[vid] = {'from': data[0], 'start': data[1], 'to': data[2], 'end': data[3]}
+            # Each line is vid,trip_id,from_id,start(,to_id, end)
+            if len(data) == 3:
+                self.buses[vid] = {'trip_id': data[0], 'from': data[1], 'start': data[2]}
+            if len(data) == 5:
+                self.buses[vid] = {'trip_id': data[0], 'from': data[1], 'start': data[2], 'to': data[3], 'end': data[4]}
 
     def update_bus_info(self):
         for bus in self.cta_data:
@@ -53,17 +53,20 @@ class BusTracker:
                 vid = bus['vid']
                 stpid = bus['stpid']
                 prdtm = bus['prdtm']
+                trip_id = bus['tatripid']
                 if stpid in self.rt_from and vid not in self.buses:  # Bus is departing
-                    self.buses[vid] = {'from': stpid, 'start': prdtm}
+                    self.buses[vid] = {'trip_id': trip_id, 'from': stpid, 'start': prdtm}
                     self.updated_data = True
-                elif stpid in self.rt_to and vid in self.buses:  # Bus is arriving
+                elif stpid in self.rt_to and vid in self.buses and trip_id == self.buses[vid]['trip_id']:  # Bus is arriving
                     self.buses[vid]['to'] = stpid
                     self.buses[vid]['end'] = prdtm
                     self.updated_data = True
 
         if self.log:
             for vid in self.buses:
-                tmp = "VID: %s | From: %s | Start: %s" % (vid, self.buses[vid]["from"], self.buses[vid]["start"])
+                tmp = "VID: %s | Trip ID: %s | From: %s | Start: %s" % (vid, self.buses[vid]["trip_id"],
+                                                                        self.buses[vid]["from"],
+                                                                        self.buses[vid]["start"])
                 if len(self.buses[vid]) == 4:
                     tmp += " | To: %s | End: %s" % (self.buses[vid]["to"], self.buses[vid]["end"])
                 print(tmp)
@@ -82,10 +85,11 @@ class BusTracker:
                         writer.writerow(self.formatted_csv_line(vid))
 
     def formatted_csv_line(self, vid):
-        if len(self.buses[vid]) == 2:
-            tmp = [vid, self.buses[vid]['from'], self.buses[vid]['start']]
+        if len(self.buses[vid]) == 3:
+            tmp = [vid, self.buses[vid]['trip_id'], self.buses[vid]['from'], self.buses[vid]['start']]
         else:
-            tmp = [vid, self.buses[vid]['from'], self.buses[vid]['start'], self.buses[vid]['to'], self.buses[vid]['end']]
+            tmp = [vid, self.buses[vid]['trip_id'], self.buses[vid]['from'], self.buses[vid]['start'],
+                   self.buses[vid]['to'], self.buses[vid]['end']]
 
         return ",".join(tmp) + "\n" if self.in_lambda else tmp
 
