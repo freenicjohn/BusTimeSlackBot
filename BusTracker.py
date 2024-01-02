@@ -41,8 +41,9 @@ class BusTracker:
 
     def parse_csv_data(self, lines):
         for vid, *data in lines:
-            # Each line is vid-trip_id,from_id,start(,to_id, end)
-            if len(data) == 2:
+            if vid == 'uid':  # header
+                pass
+            elif len(data) == 2:  # Each line is vid-trip_id,from_id,start(,to_id, end)
                 self.buses[vid] = {'from': data[0], 'start': data[1]}
             elif len(data) == 4:
                 self.buses[vid] = {'from': data[0], 'start': data[1], 'to': data[2], 'end': data[3]}
@@ -73,13 +74,14 @@ class BusTracker:
     def write_csv_data(self):
         if self.updated_data:
             if self.in_lambda:
-                data = ""
+                data = "uid,from,start,to,end\n"
                 for uid in self.buses:
                     data += self.formatted_csv_line(uid)
                 self.s3_client.put_object(Body=data, Bucket='bus-time-lambda-bucket', Key=self.data_path)
             else:
                 with open(self.data_path, mode="w") as file:
                     writer = csv.writer(file)
+                    writer.writerow(['uid', 'from', 'start', 'to', 'end'])
                     for uid in self.buses:
                         writer.writerow(self.formatted_csv_line(uid))
 
