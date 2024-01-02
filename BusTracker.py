@@ -42,7 +42,7 @@ class BusTracker:
     def parse_csv_data(self, lines):
         for vid, *data in lines:
             if vid == 'uid':  # header
-                pass
+                continue
             elif len(data) == 2:  # Each line is vid-trip_id,from_id,start(,to_id, end)
                 self.buses[vid] = {'from': data[0], 'start': data[1]}
             elif len(data) == 4:
@@ -64,12 +64,9 @@ class BusTracker:
 
         if self.log:
             for uid in self.buses:
-                tmp = "VID-Trip ID: %s | From: %s | Start: %s" % (uid,
-                                                                  self.buses[uid]["from"],
-                                                                  self.buses[uid]["start"])
-                if len(self.buses[uid]) != 2:
-                    tmp += " | To: %s | End: %s" % (self.buses[uid]["to"], self.buses[uid]["end"])
-                print(tmp)
+                if len(self.buses[uid]) == 2:
+                    print("VID-Trip ID: %s | From: %s | Start: %s" % (uid, self.buses[uid]["from"],
+                                                                      self.buses[uid]["start"]))
 
     def write_csv_data(self):
         if self.updated_data:
